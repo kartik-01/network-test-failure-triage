@@ -1,0 +1,10 @@
+{
+  "run_id": "service-1.1.0",
+  "build": "1.1.0",
+  "test_case": "TC_SERVICE_009",
+  "result": "fail",
+  "component": "service",
+  "title": "Switch daemon failed",
+  "detail": "switchd state FAILED",
+  "evidence": "switchd status FAILED"
+}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ test_case }} history · Triage{% endblock %}
+{% block body %}
+<p class="back"><a href="/" data-testid="back-to-queue">Back to queue</a></p>
+<section class="panel">
+  <h1 class="mono" data-testid="history-test">{{ test_case }}</h1>
+  <p class="lede">Each build of this test, whether it passed or failed, and whether that run opened or reopened a case. A pass in the middle of the list does not mean the case closed itself.</p>
+  <p class="muted">
+    {% if case_id %}
+    Case is <span data-testid="history-case-state">{{ case_state }}</span>.
+    <a href="/cases/{{ case_id }}" data-testid="history-open-case">Open case</a>
+    {% else %}
+    <span data-testid="history-case-state">No case.</span>
+    This test has not failed, so there is nothing to triage.
+    {% endif %}
+  </p>
+  <table data-testid="history">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Build</th>
+        <th>Result</th>
+        <th>Case</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for run in runs %}
+      <tr data-testid="history-row-{{ run.run_id }}">
+        <td class="mono">{{ run.ingested_at }}</td>
+        <td class="mono" data-testid="history-build-{{ run.run_id }}">{{ run.build }}</td>
+        <td data-testid="history-result-{{ run.run_id }}"><span class="result result-{{ run.result }}">{{ run.result }}</span></td>
+        <td data-testid="history-effect-{{ run.run_id }}">{{ run.effect_label }}</td>
+        <td class="wrap">{{ run.detail }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

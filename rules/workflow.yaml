@@ -1,0 +1,45 @@
+# Default triage workflow. The engine reads this file; it does not hard-code
+# the path a case may take. Each move still requires a non-empty reason.
+
+states:
+  - new
+  - triaged
+  - verify
+  - closed
+  - reopened
+
+severities:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+  - LOW
+
+priorities:
+  - P1
+  - P2
+  - P3
+  - P4
+
+# Entering any of these states is rejected until both severity and priority are set.
+classification_required_for:
+  - triaged
+
+# The only state that counts as closed. A pass does not enter it automatically.
+close_state: closed
+
+# Moving to close_state is rejected until a rerun has been recorded on the case.
+close_requires_rerun: true
+
+transitions:
+  - from: new
+    to: triaged
+  - from: triaged
+    to: verify
+  - from: verify
+    to: closed
+  - from: verify
+    to: triaged
+  - from: closed
+    to: reopened
+  - from: reopened
+    to: triaged

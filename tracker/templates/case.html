@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}{{ case.test_case }} · Triage{% endblock %}
+{% block body %}
+<p class="back"><a href="/" data-testid="back-to-queue">Back to queue</a></p>
+
+<section class="case-head">
+  <p class="kicker">
+    <span class="mono" data-testid="case-test">{{ case.test_case }}</span>
+    <span class="state-pill" data-testid="case-state">{{ case.state }}</span>
+    <span class="mono" data-testid="case-build">build {{ case.latest_build }}</span>
+    <span data-testid="case-component">{{ case.component }}</span>
+  </p>
+  <h1 data-testid="case-title">{{ case.title }}</h1>
+  <p class="detail" data-testid="case-detail">{{ case.detail }}</p>
+  <p class="muted">
+    Open since <span data-testid="case-opened">{{ case.opened_at }}</span>
+    · <span data-testid="case-age">{{ case.age }}</span>
+    · <a href="/history/{{ case.test_case }}" data-testid="history-link">Run history</a>
+  </p>
+</section>
+
+<section class="action-panel" data-testid="action-panel">
+  <h2>What to do now</h2>
+  <p class="guidance" data-testid="guidance">
+    {% if case.state == 'new' and not (case.severity and case.priority) %}
+    This failure is new. Choose severity (how bad it is) and priority (how soon it must be worked), then press Save. The move button shows up only after both are set. Close is not offered from here.
+    {% elif case.state == 'new' %}
+    Classification is saved. Write why you are taking it, then move it to triaged. That is the only legal next step.
+    {% elif case.state == 'triaged' %}
+    This case is in the working queue. When a fix is ready for the same test to be run again, move it to verify. It still cannot be closed from here.
+    {% elif case.state == 'verify' and not case.rerun_recorded %}
+    Verify means someone has to rerun this test. A pass does not close the case. It only unlocks Close. A failing rerun means move it back to triaged.
+    {% elif case.state == 'verify' and case.rerun_recorded %}
+    A passing rerun is already recorded. Close the case with a reason, or send it back to triaged if the fix is not good enough.
+    {% elif case.state == 'reopened' %}
+    This test failed again after it was closed. The audit log has both the earlier close and this reopen. Move it back to triaged once priority is set.
+    {% elif case.state == 'closed' %}
+    This case is closed. A later failing run reopens it on its own. You can also move it to reopened by hand, with a reason.
+    {% else %}
+    Follow the move buttons. Anything else is rejected and stays in the audit log.
+    {% endif %}
+  </p>
+  <p data-testid="rerun-status">
+    {% if case.rerun_recorded %}Passing rerun recorded.{% else %}No passing rerun recorded.{% endif %}
+  </p>
+  {% if error %}
+  <p class="error" data-testid="form-error">{{ error }}</p>
+  {% endif %}
+
+  <div class="action-grid">
+    <form method="post" action="/cases/{{ case.id }}/classification" class="stack" data-testid="classification-form">
+      <h3>1. Classify</h3>
+      <p class="hint">Severity is impact. Priority is urgency. A LOW / P1 case sorts ahead of a CRITICAL / P3 case.</p>
+      <label>Severity
+        <select name="severity" data-testid="severity">
+          <option value="">unset</option>
+          {% for name in severities %}
+          <option value="{{ name }}" {% if case.severity == name %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Priority
+        <select name="priority" data-testid="priority">
+          <option value="">unset</option>
+          {% for name in priorities %}
+          <option value="{{ name }}" {% if case.priority == name %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit" class="primary" data-testid="save-classification">Save classification</button>
+    </form>
+
+    <div class="stack">
+      <h3>2. Move</h3>
+      {% if legal %}
+      <form method="post" action="/cases/{{ case.id }}/transitions" class="stack" data-testid="transition-form">
+        <p class="hint">Only legal next states are shown. The reason is required and is stored on the audit row.</p>
+        <label>Your name
+          <input name="actor" value="qa.engineer" data-testid="actor" autocomplete="off" required>
+        </label>
+        <label>Reason
+          <input name="reason" data-testid="reason" placeholder="Why this move is the right one" autocomplete="off" required>
+        </label>
+        <div class="move-buttons">
+          {% for target in legal %}
+          <button type="submit" class="primary" name="to_state" value="{{ target }}" data-testid="move-{{ target }}">Move to {{ target }}</button>
+          {% endfor %}
+        </div>
+      </form>
+      {% else %}
+      <p data-testid="no-moves">
+        {% if case.severity and case.priority %}No further move is available.{% else %}Set severity and priority, then press Save. Close is not offered until the case reaches verify and a passing rerun is recorded.{% endif %}
+      </p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Evidence</h2>
+  <table data-testid="evidence">
+    <thead>
+      <tr>
+        <th>Build</th>
+        <th>Result</th>
+        <th>What happened</th>
+        <th>Detail</th>
+        <th>Evidence</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for run in evidence %}
+      <tr data-testid="evidence-row-{{ run.run_id }}">
+        <td class="mono">{{ run.build }}</td>
+        <td><span class="result result-{{ run.result }}">{{ run.result }}</span></td>
+        <td>{{ run.effect_label }}</td>
+        <td class="wrap">{{ run.detail }}</td>
+        <td class="wrap mono">{{ run.evidence }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Audit log</h2>
+  <p class="hint">Every attempted move is inserted here. Rows are not edited or deleted.</p>
+  {% if audits %}
+  <table data-testid="audit-log">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Actor</th>
+        <th>From</th>
+        <th>To</th>
+        <th>Result</th>
+        <th>Reason</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in audits %}
+      <tr data-testid="audit-row-{{ row.id }}" data-from="{{ row.from_state }}" data-to="{{ row.to_state }}" data-accepted="{{ 'true' if row.accepted else 'false' }}">
+        <td class="mono">{{ row.timestamp }}</td>
+        <td data-testid="audit-actor-{{ row.id }}">{{ row.actor }}</td>
+        <td>{{ row.from_state }}</td>
+        <td>{{ row.to_state }}</td>
+        <td>{% if row.accepted %}accepted{% else %}rejected{% endif %}</td>
+        <td class="wrap" data-testid="audit-reason-{{ row.id }}">{{ row.reason }}</td>
+        <td class="wrap">{{ row.message }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p data-testid="audit-empty">No moves recorded yet. The first row appears when you move this case, or if a later failure reopens it.</p>
+  {% endif %}
+</section>
+{% endblock %}

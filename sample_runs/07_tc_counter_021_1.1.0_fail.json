@@ -1,0 +1,10 @@
+{
+  "run_id": "counter-1.1.0",
+  "build": "1.1.0",
+  "test_case": "TC_COUNTER_021",
+  "result": "fail",
+  "component": "counters",
+  "title": "CRC errors above threshold",
+  "detail": "crc_errors on eth2 is 4, threshold 0",
+  "evidence": "eth2 crc_errors 4"
+}

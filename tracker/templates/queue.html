@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Queue · Triage{% endblock %}
+{% macro open_case(test_case) -%}
+{%- set match = cases | selectattr('test_case', 'equalto', test_case) | list -%}
+{%- if match -%}
+<a href="/cases/{{ match[0].id }}" data-testid="demo-{{ test_case }}">{{ test_case }}</a>
+{%- else -%}
+{{ test_case }}
+{%- endif -%}
+{%- endmacro %}
+{% block body %}
+<section class="guide" data-testid="demo-script">
+  <h1>Work the queue from the top</h1>
+  <p class="lede">Click a test case. Set priority if it says unset, save, then press the only move button the case is allowed to take. The audit log stores your name and the reason. A case cannot skip ahead, and a pass never closes one by itself.</p>
+  <ol class="steps">
+    <li>
+      <strong>See why priority wins.</strong>
+      <span>{{ open_case('TC_SERVICE_009') }} is CRITICAL / P3, so it sorts above {{ open_case('TC_VLAN_042') }} (HIGH, priority still unset). Open {{ open_case('TC_COUNTER_021') }}, set LOW and P1, save, and come back. That low-severity P1 case moves above the critical one.</span>
+    </li>
+    <li>
+      <strong>Triage the VLAN failure.</strong>
+      <span>Open {{ open_case('TC_VLAN_042') }}. It is new, so Close is not offered. Set HIGH and P2, save, type a reason, and press Move to triaged. The audit row appears under the form.</span>
+    </li>
+    <li>
+      <strong>Read a reopen.</strong>
+      <span>Open {{ open_case('TC_SERVICE_009') }}. The state is reopened. The log has the close on 1.0.5 and the later failure that reopened it. Run history shows each build.</span>
+    </li>
+  </ol>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>Open cases</h2>
+    <p class="muted">Sorted by priority, then severity, then oldest open case. <span data-testid="open-count">{{ open_count }} open</span></p>
+  </div>
+  <form method="get" action="/" class="filters" data-testid="filters">
+    <label>State
+      <select name="state" data-testid="filter-state">
+        <option value="">All open</option>
+        {% for name in open_states %}
+        <option value="{{ name }}" {% if name == selected_state %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Severity
+      <select name="severity" data-testid="filter-severity">
+        <option value="">All</option>
+        {% for name in severities %}
+        <option value="{{ name }}" {% if name == selected_severity %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Component
+      <select name="component" data-testid="filter-component">
+        <option value="">All</option>
+        {% for name in components %}
+        <option value="{{ name }}" {% if name == selected_component %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" data-testid="filter-apply">Apply</button>
+    <a class="text-button" href="/" data-testid="filter-clear">Clear</a>
+  </form>
+
+  {% if cases %}
+  <div class="table-wrap">
+  <table data-testid="queue">
+    <thead>
+      <tr>
+        <th>Test case</th>
+        <th>Build</th>
+        <th>Severity</th>
+        <th>Priority</th>
+        <th>State</th>
+        <th>Age</th>
+        <th>Do this</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for case in cases %}
+      <tr data-testid="case-row-{{ case.test_case }}">
+        <td>
+          <a class="case-link" href="/cases/{{ case.id }}" data-testid="open-{{ case.test_case }}">
+            <span class="mono">{{ case.test_case }}</span>
+            <span class="case-title">{{ case.title }}</span>
+          </a>
+          <a class="history-link" href="/history/{{ case.test_case }}" data-testid="history-{{ case.test_case }}">History</a>
+        </td>
+        <td class="mono nowrap" data-testid="cell-build-{{ case.test_case }}">{{ case.latest_build }}</td>
+        <td data-testid="cell-severity-{{ case.test_case }}">
+          {% if case.severity %}
+          <span class="sev sev-{{ case.severity|lower }}">{{ case.severity }}</span>
+          {% else %}
+          <span class="muted">unset</span>
+          {% endif %}
+        </td>
+        <td data-testid="cell-priority-{{ case.test_case }}">{{ case.priority or "unset" }}</td>
+        <td data-testid="cell-state-{{ case.test_case }}">{{ case.state }}</td>
+        <td class="nowrap" data-testid="cell-age-{{ case.test_case }}">{{ case.age }}</td>
+        <td class="next" data-testid="cell-next-{{ case.test_case }}">
+          <a href="/cases/{{ case.id }}">
+          {% if not case.priority %}Set priority
+          {% elif case.state == 'new' or case.state == 'reopened' %}Move to triaged
+          {% elif case.state == 'triaged' %}Move to verify
+          {% elif case.state == 'verify' and case.rerun_recorded %}Close or return
+          {% elif case.state == 'verify' %}Needs a rerun
+          {% else %}Open the case
+          {% endif %}
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p data-testid="queue-empty">No open cases match this filter. Clear the filters to see the queue again.</p>
+  {% endif %}
+</section>
+{% endblock %}

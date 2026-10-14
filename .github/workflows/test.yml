@@ -1,0 +1,20 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # The hosted runner's Chromium package is a moving target, so CI runs
+      # the same image as `docker run --rm triage`.
+      - name: Build the test image
+        run: docker build -t triage .
+
+      - name: Run pytest
+        run: docker run --rm triage

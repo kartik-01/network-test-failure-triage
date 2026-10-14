@@ -1,0 +1,10 @@
+{
+  "run_id": "link-1.1.0",
+  "build": "1.1.0",
+  "test_case": "TC_LINK_013",
+  "result": "fail",
+  "component": "link",
+  "title": "Link operational state down",
+  "detail": "eth3 oper state DOWN, previous build was UP",
+  "evidence": "eth3 oper state DOWN"
+}

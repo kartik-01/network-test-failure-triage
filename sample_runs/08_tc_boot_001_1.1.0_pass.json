@@ -1,0 +1,10 @@
+{
+  "run_id": "boot-1.1.0",
+  "build": "1.1.0",
+  "test_case": "TC_BOOT_001",
+  "result": "pass",
+  "component": "boot",
+  "title": "Boot configuration load",
+  "detail": "boot sequence completed",
+  "evidence": "boot sequence completed"
+}

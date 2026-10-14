@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Triage{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <a class="brand" href="/" data-testid="nav-queue">Triage</a>
+    <span class="product">Network test failure triage</span>
+    <nav>
+      <a href="/" data-testid="nav-queue-link">Queue</a>
+    </nav>
+  </header>
+  <main>
+    {% block body %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "run_id": "vlan-1.1.0",
+  "build": "1.1.0",
+  "test_case": "TC_VLAN_042",
+  "result": "fail",
+  "component": "vlan",
+  "title": "Operational VLAN mismatch",
+  "detail": "eth1 operational VLAN is 1, expected 20",
+  "evidence": "eth1 operational vlan 1"
+}
